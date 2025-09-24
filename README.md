@@ -9,6 +9,7 @@ Django project study
 ## 📑 Guias de Documentação
 - [Sistema Empresarial ERP](./doc/sistema_empresarial.txt)
 - [IDE VS EDITOR DE CÓDIGO FONTE](./doc/ide_vs_editor.txt)
+- [EXTRAS DE DOCUMENTACAO](./doc/django/)
 
 # Guia para o Django
 
@@ -174,9 +175,6 @@ pip freeze > requirements.txt
     sudo apt-get update && sudo apt-get install -y libpq-dev build-essential
     pip install "psycopg[binary]"
     ```
-
-  - Pode usar também o banco docker com várias distros, verifique em [Instalação do SQL](INSTALL_SQL.md)
-
 
 - **Múltiplos bancos em Docker**: garanta portas distintas (já estão no seu compose).
 - **Arquivos que vale ignorar** (`.gitignore`):

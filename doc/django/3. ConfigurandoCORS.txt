@@ -1,0 +1,55 @@
+O que é CORS?
+
+CORS significa Cross-Origin Resource Sharing (Compartilhamento de Recursos entre 
+Origens Diferentes).
+
+É um mecanismo de segurança usado pelos navegadores para controlar quais domínios 
+podem fazer requisições para outro domínio
+
+Explicando de forma simples:
+
+    Imagine que seu frontend (React, Vue, Angular, etc.) está rodando em http://localhost:3000.
+
+    Ele precisa buscar dados de uma API que está em http://localhost:8000 (Django).
+
+    Como os domínios são diferentes (3000 ≠ 8000), o navegador bloqueia a requisição por padrão.
+
+Esse bloqueio é justamente o CORS.
+
+Para liberar, o servidor precisa responder com cabeçalhos especiais, por exemplo:
+
+    Access-Control-Allow-Origin: http://localhost:3000
+
+    # Isso diz ao navegador: “Ok, essa origem pode acessar meus dados.”
+
+
+Então, como visto, precisamos configurar o CORS no django, para isso vamos ajustar o seguinte:
+
+Em settings.py, vamos adicionar o cors em INSTALED_APPS
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        # Rest Framework
+        'rest_framework',
+        # CORS
+        "corsheaders",
+    ]
+
+Depois, ainda em settings.py, vamos adicionar o middlleware do cors:
+
+    MIDDLEWARE = [
+        'corsheaders.middleware.CorsMiddleware',
+
+        'django.middleware.security.SecurityMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    ]

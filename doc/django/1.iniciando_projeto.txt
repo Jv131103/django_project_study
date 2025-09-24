@@ -1,0 +1,36 @@
+1. Crie um ambiente virtual e o inicie;
+
+2. instale as seguintes libs:
+
+    pip install django
+    pip install djangorestframework
+    pip install markdown
+    pip install django-filter
+    pip install pymysql
+    pip install django-cors-headers
+    pip install djangorestframework-simplejwt
+
+3. Crie o corção do projeto
+
+    django-admin startproject core .  # Cria uma pasta específica
+
+        OU
+    
+    django-admin startproject core    # Cria na raiz do projeto
+
+4. Após criar, dentro dele no arquivo settings.py, altere o seguinte item:
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        # Rest Framework
+        'rest_framework',
+    ]
+
+5. Após isso, vamos testar se o django está funcionando normalmente:
+
+    py manage.py runserver

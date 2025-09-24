@@ -102,4 +102,39 @@ KPIs úteis por processo:
 
     Finanças: fechamento contábil (dias), variação orçamentária.
 
+Cloud x On-premises (rápido)
+
+    . Cloud: menor CAPEX, atualizações contínuas, time-to-value mais rápido; 
+    menos controle fino de infra.
+
+    . On-prem: maior controle e customização; maior custo de manutenção/atualização. 
+    (Escolha depende de requisitos, equipe e compliance.)
+
+Técnicas úteis no dia a dia
+
+    Process mining para descobrir gargalos antes/depois do go-live.
+
+    RPA/automação em tarefas de alto volume (faturas, conciliações).
+
+    Dashboards operacionais em tempo real (alertas, exceções).
+
+    Catálogo de integrações versionado (APIs, eventos, contratos).
+
+    Governança de releases: janelas, feature flags, rollback plan.
+
+    Estratégia de dados: ambientes (DEV/TEST/PRD), masks de dados sensíveis.
+
+Exemplo simples (mini cenário)
+
+    - Loja de cosméticos com e-commerce e 2 filiais
+
+        . Pedido entra no módulo de Vendas → verifica estoque no WMS → 
+        gera picking → emite NF e atualiza contas a receber.
+
+        . Se falta item: MRP sugere produção/compra; Compras dispara requisição 
+        e ordem de compra.
+
+        . Financeiro consolida recebimentos, concilia no banco; RH roda folha; 
+        Diretoria acompanha DRE e fluxo de caixa em painel. Tudo em uma base de 
+        dados; cada lançamento alimenta relatórios e KPIs.
 

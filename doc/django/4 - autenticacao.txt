@@ -1,0 +1,27 @@
+Vamos configurar JWT com o django, mas afinal, o que é JWT?
+
+JWT (JSON Web Token) é um padrão para autenticação stateless. O servidor emite um token assinado 
+(não criptografado) com informações como o user_id e horário de expiração. O cliente envia esse 
+token em cada requisição (geralmente no header Authorization: Bearer <token>). O servidor valida 
+a assinatura e a expiração sem precisar manter sessão em banco/memória.
+
+Vantagens: simples, rápido, independente de sessão.
+Cuidados: proteger o token (idealmente em cookie HttpOnly), usar HTTPS e expirações curtas.
+
+Mas como configurá-lo no Django?
+
+Vamos iniciar alterando o settings.py, mexendo nos seguintes valores:
+
+    # Rest Framework settings
+    # https://pypi.org/project/djangorestframework/
+    REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'rest_framework_simplejwt.authentication.JWTAuthentication',
+        ),
+    }
+
+    # Simple JWT settings
+    # https://pypi.org/project/djangorestframework-simplejwt/
+    SIMPLE_JWT = {
+        "SLIDING_TOKEN_LIFETIME": timedelta(days=1),
+    }

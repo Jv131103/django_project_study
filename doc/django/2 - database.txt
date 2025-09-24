@@ -1,0 +1,44 @@
+Vamos criar um .env, para assegurar que só nós configuramos o banco corretamente:
+
+    DATABASE_ENGINE=your_engine
+    DATABASE_NAME=your_database
+    DATABASE_USER=your_user
+    DATABASE_PASSWORD=your_password
+    DATABASE_HOST=your_host
+    DATABASE_PORT=your_port
+
+Após isso em settings.py, vamo fazer as seguintes adições:
+
+    PS: Mas antes instale em sua env:
+
+        pip install python-dotenv
+
+    import os
+    from dotenv import load_dotenv
+
+    # Carrega variáveis do .env
+    load_dotenv()
+
+    DATABASES = {
+        'default': {
+            'ENGINE': os.getenv("DATABASE_ENGINE", "django.db.backends.sqlite3"),
+            'NAME': os.getenv("DATABASE_NAME", BASE_DIR / "db.sqlite3"),
+            'USER': os.getenv("DATABASE_USER", ""),
+            'PASSWORD': os.getenv("DATABASE_PASSWORD", ""),
+            'HOST': os.getenv("DATABASE_HOST", "127.0.0.1"),
+            'PORT': os.getenv("DATABASE_PORT", "3306"),
+        }
+    }
+
+Agora vamos realizar o migrate no Django:
+
+    Em core, no arquivo __init__.py precisamos adicionar o build do pymysql para rodar:
+
+        import pymysql
+
+        pymysql.install_as_MySQLdb()
+
+    E no terminal:
+
+        python manage.py migrate
+        python manage.py makemigrations
