@@ -1,0 +1,105 @@
+                        Sistema Empresarial (ERP)
+
+
+ERP (Enterprise Resource Planning) é um conjunto integrado de aplicativos de 
+negócio que compartilham modelo de dados único e processos ponta-a-ponta 
+(finanças, RH, supply chain, manufatura, serviços etc.).
+
+Objetivo: padronizar processos, automatizar rotinas e dar visibilidade em tempo 
+real da operação por toda a empresa.
+
+Para que serve (valor prático):
+
+    - Unificar dados (uma “fonte única da verdade”) e reduzir retrabalho entre 
+    áreas. 
+
+    - Acelerar decisões com relatórios consolidados e analytics.
+
+    - Controlar custos e riscos (compliance, auditoria, segregação de funções).
+
+    - Escalar processos com governança e padronização.
+
+Como funciona (por dentro):
+
+    . Módulos por área (Finanças, Compras, Vendas, Estoque/Armazém, Produção, 
+    Projetos, RH/Payroll, CRM, e-commerce etc.), todos conectados a uma base de 
+    dados comum. Alterações num módulo propagam para os demais.
+
+    . Fluxos end-to-end (ex.: order-to-cash, procure-to-pay, plan-to-produce).
+
+Arquiteturas & tendências:
+
+    Monolítico (suite única) × Best-of-breed (vários especialistas integrados).
+
+    Pós-moderno (Gartner): “quebrar” o ERP monolítico em apps mais acoplados de 
+    forma leve, muitas vezes cloud, mantendo um núcleo e compondo o resto por 
+    especialidades. 
+
+    Composable ERP: estratégia adaptativa para montar/alterar capacidades 
+    rapidamente (substituir módulos conforme a necessidade). Evolução do 
+    pós-moderno.
+
+Vantagens:
+
+    Dados consistentes, menos reconciliação entre planilhas. 
+
+    Produtividade via automação e workflows. 
+
+    Governança (logs, perfis, trilhas de auditoria).
+
+    Escalabilidade e padronização de processos.
+
+Desvantagens / riscos:
+
+    Projeto complexo (escopo, mudança cultural, integração, migração de dados). 
+
+    Custo e tempo relevantes; risco de customização excessiva e lock-in.
+
+    Dependência de qualidade de dados e adesão dos usuários.
+
+Ciclo de implementação (visão prática):
+
+    1. Descoberta & Planejamento (objetivos, escopo, KPIs, time, cronograma).
+
+    2. Desenho (fit-to-standard) & Configuração.
+
+    3. Desenvolvimento/Integrações (APIs, iPaaS, eventos).
+
+    4. Migração de Dados & Testes (unitário, integrado, UAT).
+
+    5. Treinamento & Gestão da Mudança.
+
+    6. Go-live & Hypercare (estabilização).
+
+Boas normas (antes, durante, depois):
+
+    Patrocínio executivo + PMO com metas claras (tempo, custo, valor).
+
+    Fit-to-standard: minimize customizações; só personalize se houver ROI.
+
+    Dados primeiro: saneamento, dicionário de dados, MDM e regras de qualidade.
+
+    Segurança & SoD: perfis least privilege, segregação de funções e auditoria.
+
+    Integração: prefira API-first/iPaaS; onde fizer sentido, eventos (pub/sub).
+
+    Testes contínuos: automatize regressão (processos críticos). 
+
+    Change Management: comunicação, treinamento prático, champions por área.
+
+    Medição de valor: defina KPIs de processo (ver abaixo) e feche o ciclo.
+
+KPIs úteis por processo:
+
+    Order-to-Cash: Days Sales Outstanding (DSO), taxa de entregas OTIF, lead 
+    time de pedido.
+
+    Procure-to-Pay: tempo de ciclo do pedido, % maverick buying.
+
+    Estoque/Logística: inventory turns, acurácia de inventário, custo por envio.
+
+    Produção: OEE, taxa de retrabalho, schedule adherence.
+
+    Finanças: fechamento contábil (dias), variação orçamentária.
+
+
