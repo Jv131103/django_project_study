@@ -1,0 +1,43 @@
+Entendendo a diferença entre IDE e Editor de Código Fonte
+
+    Um pouco sobre IDE
+
+IDE (Ambiente de Desenvolvimento Integrado):
+
+Uma IDE, ou Ambiente de Desenvolvimento Integrado, é uma ferramenta completa que reúne diversas funcionalidades para auxiliar no desenvolvimento de software. Ela oferece um conjunto de recursos que vão além da simples edição de código. Algumas características das IDEs incluem:
+
+    Editor de Código: A IDE inclui um editor de código que permite escrever, editar e formatar o código-fonte.
+
+    Depuração (Debugging): A IDE fornece recursos avançados de depuração, permitindo que os desenvolvedores identifiquem e corrijam erros no código de forma eficiente.
+
+    Gerenciamento de Projetos: As IDEs geralmente têm recursos de gerenciamento de projetos, permitindo organizar e estruturar seus arquivos de código.
+
+    Compilação e Construção: Elas podem oferecer ferramentas para compilar, construir e executar o código diretamente da própria interface.
+
+    Assistência ao Desenvolvedor: Recursos como sugestões de código, autocompletar, verificação de erros em tempo real e documentação integrada ajudam os desenvolvedores a escrever código de maneira mais eficiente.
+
+    Integração com Ferramentas Externas: Muitas IDEs se integram com sistemas de controle de versão, depuração externa, testes automatizados e outros recursos.
+
+    Personalização: Elas costumam ser altamente personalizáveis, permitindo que os desenvolvedores escolham temas, plugins e configurações conforme suas preferências.
+
+Exemplos de IDEs populares são o Visual Studio (para várias linguagens), o Eclipse (para Java), o PyCharm (para Python) e o Android Studio (para desenvolvimento Android).
+
+    Um pouco sobre editores de código fonte
+
+Editor de Código Fonte:
+
+Um Editor de Código Fonte é uma ferramenta mais focada em fornecer um ambiente para edição de código. Ele oferece recursos básicos de edição, mas não possui as funcionalidades avançadas de uma IDE. Algumas características dos Editores de Código Fonte incluem:
+
+    Edição de Código: Editores de código são projetados principalmente para escrever e modificar código-fonte.
+
+    Personalização: Eles geralmente são altamente personalizáveis, permitindo que os desenvolvedores escolham temas, extensões e configurações.
+
+    Leveza: Editores de código costumam ser mais leves e rápidos, adequados para tarefas específicas.
+
+    Extensibilidade: Muitos editores de código podem ser expandidos com extensões para adicionar funcionalidades específicas.
+
+Exemplos populares de Editores de Código Fonte são o Sublime Text e o Atom.
+
+Conclusão: Em resumo, uma IDE oferece um conjunto completo de ferramentas para desenvolvimento, incluindo edição de código, depuração, gerenciamento de projetos e muito mais. Por outro lado, um Editor de Código Fonte é mais focado na edição de código e pode ser uma escolha leve para quem não necessita de todos os recursos de uma IDE. A escolha entre usar uma IDE ou um Editor de Código Fonte depende das necessidades e preferências do desenvolvedor e do tipo de projeto em que estão trabalhando.
+
+    Nós usaremos nesse curso o Visual Studio Code, dessa forma recomendamos que você também o utilize
