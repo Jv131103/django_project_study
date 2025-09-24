@@ -6,4 +6,4 @@ Django project study
 - [Instalação do Python](./INSTALL_PYTHON.md)
 
 ## 📑 Guias de Documentação
-- [Sistema Empresarial ERP] (./doc/sistema_empresarial.txt)
+- [Sistema Empresarial ERP](./doc/sistema_empresarial.txt)
