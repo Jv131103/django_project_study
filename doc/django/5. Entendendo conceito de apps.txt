@@ -1,0 +1,215 @@
+                                APPS
+
+O que é um app no Django?
+
+    . No Django, um app é um módulo (pacote de Python) que representa uma parte da aplicação.
+
+    . Cada app deve ter um propósito específico.
+
+    . Exemplo:
+
+        - blog → cuida de posts e comentários.
+
+        - users → cuida de cadastro e autenticação.
+
+        - store → cuida de produtos e vendas.
+
+O projeto Django é um container principal (com as configurações), e os apps são os blocos 
+funcionais que você encaixa nele.
+
+                        Estrutura de um app
+
+Quando você cria um app (python manage.py startapp blog), a estrutura gerada é:
+
+    auth/
+    │── admin.py        # Configura o admin do Django
+    │── apps.py         # Configuração do app (nome, etc.)
+    │── migrations/     # Histórico das alterações no banco
+    │── models.py       # Modelos (tabelas do banco)
+    │── tests.py        # Testes automatizados
+    │── views.py        # Controladores (lógica das páginas)
+    │── __init__.py     # Torna o diretório um pacote Python
+
+    Você pode (e deve) criar também urls.py, forms.py, serializers.py, services.py etc., 
+    conforme o app cresce.
+
+                            Criando um app
+
+Passo a passo:
+
+    django-admin startproject myproject
+    cd myproject
+    python manage.py startapp auth
+
+Agora, adicione o app em settings.py → INSTALLED_APPS:
+
+    INSTALLED_APPS = [
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.contenttypes",
+        "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        "auth",  # 👈 registrando o app
+    ]
+
+                        Onde ficam as rotas de um app?
+
+Um projeto pode ter urls globais (em myproject/urls.py) e urls locais (em cada app).
+
+Exemplo em auth/urls.py:
+
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.home, name="home"),
+        path("posts/", views.posts, name="posts"),
+    ]
+
+E no myproject/urls.py você inclui o do app:
+
+    from django.urls import path, include
+
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("blog/", include("blog.urls")),  # 👈 inclui urls do app
+    ]
+
+                            Views de um app
+
+No views.py do app, você cria funções ou classes:
+
+    from django.http import HttpResponse
+
+    def home(request):
+        return HttpResponse("Bem-vindo ao Blog!")
+
+    def posts(request):
+        return HttpResponse("Aqui estão os posts")
+
+No início, usamos Function-Based Views (FBVs).
+
+Em projetos maiores, usamos Class-Based Views (CBVs) ou até ViewSets (DRF).
+
+                        Models dentro de um app
+
+Cada app tem seus models (tabelas).
+
+Exemplo (auth/models.py):
+
+from django.db import models
+
+    class Post(models.Model):
+        username = models.CharField(max_length=200)
+        email = models.EmailField()
+        password = models.CharField(max_length=200)
+
+        def __str__(self):
+            return self.title
+
+Rodando migrações:
+
+    python manage.py makemigrations
+    python manage.py migrate
+
+
+Admin do app:
+
+    Registrar models no admin.py do app (Exemplo):
+
+        from django.contrib import admin
+        from .models import Post
+
+        @admin.register(Post)
+        class PostAdmin(admin.ModelAdmin):
+            list_display = ("username", "email")
+
+    Agora o app já tem CRUD no Django Admin.
+
+
+                    Organização de múltiplos apps
+
+Regra de ouro: cada app deve ter responsabilidade única.
+
+    users → autenticação e perfis.
+
+    blog → posts e comentários.
+
+    store → catálogo e carrinho.
+
+EX:
+
+    myproject/
+    │── auth/
+    │── users/
+    │── store/
+    │── myproject/   # configurações globais
+
+Isso facilita manutenção, testes e até escalar para micro serviços.
+
+                        Comunicação entre apps
+
+Às vezes, um app precisa usar outro.
+
+    Exemplo:
+
+        auth tem autenticação.
+
+        users tem autores.
+
+No auth/models.py:
+
+    from django.contrib.auth.models import User
+    from django.db import models
+
+    class Post(models.Model):
+        author = models.ForeignKey(User, on_delete=models.CASCADE)
+        title = models.CharField(max_length=200)
+        content = models.TextField()
+
+
+                    Apps reutilizáveis (pacotes)
+
+O Django incentiva criar apps que podem ser reutilizados em outros projetos.
+Exemplo: um app comments pode ser usado em blog, fórum ou e-commerce.
+
+    Estruture bem.
+
+    Use namespaces em urls (app_name = "blog").
+
+    Publique no PyPI se quiser compartilhar.
+
+Boas práticas com apps:
+
+    ✅ Um app = uma responsabilidade clara.
+    ✅ Sempre crie urls.py no app, mesmo se for pequeno.
+    ✅ Organize por camadas (models, views, forms, serializers, services).
+    ✅ Use namespaces para evitar conflitos de urls.
+    ✅ Faça testes (tests.py).
+    ✅ Crie apps reutilizáveis.
+
+
+                            EM NOSSO CÓDIGO
+
+1°: Criar um app:
+
+    django-admin startapp accounts
+
+2°: Adicionar no INSTALLED_APPS:
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        # Rest Framework
+        'rest_framework',
+        'rest_framework_simplejwt.token_blacklist',  # opcional: para “logout”/revogação
+        # CORS
+        "corsheaders",
+        # Minhas apps
+        'accounts'
+    ]

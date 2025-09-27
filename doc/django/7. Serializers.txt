@@ -1,0 +1,187 @@
+1. O que é um serializer em programação?
+
+    Serializer vem de serialize = “transformar em série” → converter dados complexos em um 
+    formato simples para transporte ou armazenamento.
+
+    Exemplo:
+
+        Objetos em Python → não podem ser enviados diretamente via rede.
+
+        Precisamos transformar em JSON, XML ou bytes.
+
+        O processo inverso é a desserialização (converter JSON → objeto Python).
+
+    Resumo:
+
+        Serialização = objeto → JSON/XML/etc.
+
+        Desserialização = JSON/XML/etc → objeto.
+
+
+2. Serializers em diferentes contextos
+
+    . Banco de dados: ORM já faz uma forma de serialização (converte objetos ↔ tabelas).
+
+    . APIs: precisamos de JSON para enviar dados entre sistemas.
+
+    . Arquivos: salvar objetos em formatos como CSV, XML ou JSON.
+
+    Exemplo genérico em Python:
+
+        import json
+
+        class User:
+            def __init__(self, nome, email):
+                self.nome = nome
+                self.email = email
+
+        user = User("Renato", "renato@email.com")
+
+        # Serializar
+        data = json.dumps(user.__dict__)
+        print(data)  
+        # {"nome": "Renato", "email": "renato@email.com"}
+
+        # Desserializar
+        obj = json.loads(data)
+        print(obj["nome"])  # Renato
+
+                        Serializers no Django (DRF)
+
+No Django REST Framework, os serializers são usados para:
+
+    Converter Models/Querysets em JSON (serialização).
+
+    Validar e transformar JSON em objetos Python/Models (desserialização).
+
+
+3. Criando um Serializer básico:
+
+Suponha um model Produto:
+
+    # models.py
+    from django.db import models
+
+    class Produto(models.Model):
+        nome = models.CharField(max_length=100)
+        preco = models.DecimalField(max_digits=8, decimal_places=2)
+        estoque = models.IntegerField()
+
+
+
+Agora, o serializer:
+
+    # serializers.py
+    from rest_framework import serializers
+    from .models import Produto
+
+    class ProdutoSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Produto
+            fields = ["id", "nome", "preco", "estoque"]
+
+
+O ModelSerializer já entende:
+
+    O model.
+
+    Os tipos de campo.
+
+    As validações (ex.: max_length, decimal_places).
+
+4. Usando o Serializer:
+
+    Serializar (Model → JSON):
+
+        produto = Produto(nome="Camiseta", preco=59.90, estoque=10)
+        serializer = ProdutoSerializer(produto)
+        print(serializer.data)
+        # {"id": None, "nome": "Camiseta", "preco": "59.90", "estoque": 10}
+
+    Desserializar (JSON → Model):
+
+        data = {"nome": "Calça", "preco": "120.00", "estoque": 5}
+        serializer = ProdutoSerializer(data=data)
+
+        if serializer.is_valid():
+            produto = serializer.save()
+            print(produto.nome)  # Calça
+
+5. Validadores em Serializers
+
+    Você pode criar validações extras:
+
+        class ProdutoSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = Produto
+                fields = "__all__"
+
+            def validate_preco(self, value):
+                if value <= 0:
+                    raise serializers.ValidationError("O preço deve ser maior que zero.")
+                return value
+
+6. Serializers aninhados (Nested)
+
+    Se Pedido tem produtos, podemos incluir dentro do serializer:
+
+        class Pedido(models.Model):
+            cliente = models.CharField(max_length=100)
+            produtos = models.ManyToManyField(Produto)
+
+
+        class ProdutoSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = Produto
+                fields = ["nome", "preco"]
+
+
+        class PedidoSerializer(serializers.ModelSerializer):
+            produtos = ProdutoSerializer(many=True)  # nested
+
+            class Meta:
+                model = Pedido
+                fields = ["cliente", "produtos"]
+
+    Saída:
+
+        {
+            "cliente": "Renato",
+            "produtos": [
+                {"nome": "Camiseta", "preco": "59.90"},
+                {"nome": "Calça", "preco": "120.00"}
+            ]
+        }
+
+7. Tipos de Serializers no DRF
+
+    Serializer → mais manual (define campo por campo).
+
+    ModelSerializer → automático (baseado em Models).
+
+    HyperlinkedModelSerializer → inclui URLs de recursos.
+
+    ListSerializer → usado para coleções.
+
+8. Boas práticas com Serializers
+
+    ✅ Prefira ModelSerializer para economizar código.
+    ✅ Use fields = "__all__" só em dev → em produção escolha campos explícitos.
+    ✅ Use validate_ + ValidationError para regras de negócio.
+    ✅ Para performance, evite nested serializer gigante → use select_related/prefetch_related.
+    ✅ Em APIs grandes → divida em serializers diferentes (ex.: ProdutoListSerializer e 
+    ProdutoDetailSerializer).
+
+                            Em nosso projeto:
+
+No app accounts, vamos criar um novo arquivo chamado serializers.py e nele vamos criar:
+
+    from rest_framework import serializers
+
+    from accounts.models import User
+
+
+    class UserSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = User
+            fields = 'id', 'name', 'email'

@@ -1,0 +1,362 @@
+                O que é um Model em Programação?
+
+Um model é uma representação de dados do mundo real dentro de um sistema de software.
+
+Ele descreve:
+
+    . Atributos (características, campos).
+
+    . Comportamentos (métodos).
+
+Em outras palavras: o model é a “forma” dos dados.
+
+Ele define como as informações são organizadas e manipuladas na aplicação.
+
+Exemplo em Programação Orientada a Objetos (POO):
+
+    class User:
+        def __init__(self, username, email):
+            self.username = username
+            self.email = email
+
+        def greet(self):
+            return f"Olá, {self.username}!"
+
+Aqui:
+
+    User é o model.
+
+    username e email são os atributos.
+
+    greet é um método (comportamento).
+
+Resumo: Models organizam dados em formato lógico para o software.
+
+                Modelos em Sistemas e Bancos de Dados
+
+Na prática, um model geralmente está ligado a um banco de dados.
+
+Ele define como os dados são armazenados e como podem ser manipulados.
+
+Exemplo em pseudo-modelo de “Produto”:
+
+    Produto
+        - nome: texto
+        - preço: número decimal
+        - quantidade: inteiro
+
+
+Esse model pode virar:
+
+    Uma tabela no banco relacional.
+
+    Um documento em banco NoSQL.
+
+    Um objeto em uma API.
+
+                        Relação MVC/MVT e Models
+
+MVC (Model-View-Controller):
+
+    . Model = dados e regras de negócio.
+
+    . View = interface com usuário.
+
+    . Controller = lógica intermediária.
+
+MVT (Model-View-Template, usado no Django):
+
+    . Model = dados.
+
+    . View = lógica da aplicação.
+
+    . Template = camada de apresentação.
+
+Nos dois casos, o Model é a base dos dados.
+
+                            Models no Django
+
+O que é um Model no Django?
+
+    No Django, models são classes Python que herdam de django.db.models.Model.
+
+    Cada model → vira uma tabela no banco de dados.
+
+    Cada atributo → vira uma coluna da tabela.
+
+    Cada instância → vira uma linha (registro).
+
+Ou seja: o Django usa ORM (Object-Relational Mapping) para mapear Python ↔ Banco de Dados.
+
+                        Criando um Model no Django:
+
+Exemplo (store/models.py):
+
+    from django.db import models
+
+    class Product(models.Model):
+        name = models.CharField(max_length=200)
+        price = models.DecimalField(max_digits=8, decimal_places=2)
+        stock = models.IntegerField()
+        created_at = models.DateTimeField(auto_now_add=True)
+
+        def __str__(self):
+            return self.name
+
+Aqui:
+
+    name → campo texto (até 200 caracteres).
+
+    price → número decimal (8 dígitos no total, 2 depois da vírgula).
+
+    stock → inteiro.
+
+    created_at → data/hora criada automaticamente.
+
+Rodando migrações:
+
+    python manage.py makemigrations
+    python manage.py migrate
+
+Agora existe uma tabela store_product no banco.
+
+                    Principais Tipos de Campos em Models
+
+Texto
+
+    CharField(max_length=N) → texto curto, exige max_length.
+
+    TextField() → texto longo, sem limite prático.
+
+    EmailField() → valida e-mails.
+
+    URLField() → valida URLs.
+
+    SlugField() → usado em URLs amigáveis (meu-produto).
+
+Números
+
+    IntegerField() → inteiros.
+
+    PositiveIntegerField() → inteiros ≥ 0.
+
+    SmallIntegerField() → inteiros pequenos.
+
+    BigIntegerField() → inteiros grandes.
+
+    DecimalField(max_digits, decimal_places) → valores monetários.
+
+    FloatField() → números de ponto flutuante.
+
+Datas e Tempo
+
+    DateField() → apenas data.
+
+    TimeField() → apenas hora.
+
+    DateTimeField() → data + hora.
+
+        auto_now_add=True → define ao criar.
+
+        auto_now=True → atualiza ao salvar.
+
+Booleanos
+
+    BooleanField() → True/False.
+
+    NullBooleanField() → (obsoleto, substituído por BooleanField(null=True)).
+
+Relacionamentos
+
+    ForeignKey(outro_modelo, on_delete=…) → muitos-para-um.
+
+    ManyToManyField(outro_modelo) → muitos-para-muitos.
+
+    OneToOneField(outro_modelo, on_delete=…) → um-para-um.
+
+Arquivos
+
+    FileField(upload_to="...") → arquivos em geral.
+
+    ImageField(upload_to="...") → imagens (usa Pillow).
+
+            Principais Atributos Opcionais (parâmetros)
+
+Esses podem ser usados em várias classes de campos.
+Vou detalhar o que fazem e onde podem ser usados.
+
+| **Atributo**         | **Usado em**                     | **Função**                   |
+| -------------------- | -------------------------------- | ---------------------------- |
+| `null=True`          | Qualquer campo                   | Permite `NULL` no banco      |
+| `blank=True`         | Qualquer campo                   | Permite vazio em formulários |
+| `unique=True`        | Qualquer campo                   | Valor único                  |
+| `default=...`        | Qualquer campo                   | Valor padrão                 |
+| `choices=[...]`      | CharField, IntegerField          | Opções fixas                 |
+| `help_text="..."`    | Qualquer campo                   | Texto de ajuda no admin      |
+| `verbose_name="..."` | Qualquer campo                   | Nome legível                 |
+| `max_length=N`       | CharField, SlugField, EmailField | Tamanho máximo               |
+| `primary_key=True`   | Qualquer campo                   | Define chave primária        |
+| `db_index=True`      | Qualquer campo                   | Índice no banco              |
+| `auto_now`           | DateField, DateTimeField         | Atualiza ao salvar           |
+| `auto_now_add`       | DateField, DateTimeField         | Define na criação            |
+| `upload_to="..."`    | FileField, ImageField            | Caminho do upload            |
+| `validators=[...]`   | Qualquer campo                   | Validações extras            |
+
+
+Exemplo de Relacionamentos:
+
+    class Customer(models.Model):
+        name = models.CharField(max_length=100)
+        email = models.EmailField()
+
+    class Order(models.Model):
+        customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+        total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Product(models.Model):
+        name = models.CharField(max_length=100)
+        price = models.DecimalField(max_digits=8, decimal_places=2)
+        orders = models.ManyToManyField(Order, related_name="products")
+
+. Um cliente (Customer) pode ter vários pedidos.
+ 
+. Um pedido (Order) pode ter vários produtos.
+ 
+. Um produto (Product) pode estar em vários pedidos.
+
+                    Métodos úteis em Models
+
+Você pode adicionar métodos customizados:
+
+    class Product(models.Model):
+        name = models.CharField(max_length=200)
+        price = models.DecimalField(max_digits=8, decimal_places=2)
+        stock = models.IntegerField()
+
+        def is_in_stock(self):
+            return self.stock > 0
+
+        def apply_discount(self, percent):
+            return self.price * (1 - percent/100)
+
+                    Consultando Models (ORM)
+
+Exemplo usando o shell:
+
+    python manage.py shell
+
+Após abrir a shell:
+
+    from store.models import Product
+
+    # Criar
+    p = Product(name="Notebook", price=3500.00, stock=10)
+    p.save()
+
+    # Buscar todos
+    Product.objects.all()
+
+    # Buscar filtrando
+    Product.objects.filter(stock__gt=0)
+
+    # Buscar um único
+    Product.objects.get(id=1)
+
+    # Atualizar
+    p.price = 3000.00
+    p.save()
+
+    # Deletar
+    p.delete()
+
+Isso substitui SQL puro (SELECT, INSERT, UPDATE, DELETE).
+
+Boas Práticas com Models no Django:
+
+    ✅ Cada model deve representar um único conceito.
+    ✅ Use __str__ para retornar nome legível.
+    ✅ Crie métodos de negócio dentro do model.
+    ✅ Use related_name em relacionamentos para clareza.
+    ✅ Sempre rode migrações (makemigrations + migrate).
+    ✅ Não coloque lógica complexa demais no model → use services.py ou managers.py se necessário.
+
+
+                            Em nosso projeto
+
+Em accounts/models.py, vamos criar:
+
+    from django.contrib.auth.models import AbstractBaseUser, Permission
+    from django.db import models
+
+    from companies.models import Enterprise
+
+
+    class User(AbstractBaseUser):
+        name = models.CharField(max_length=255)
+        email = models.EmailField(unique=True)
+        is_owner = models.BooleanField(default=True)
+
+        USERNAME_FIELD = 'email'
+
+        def __str__(self) -> str:
+            return self.email
+
+
+    class Group(models.Model):
+        nome = models.CharField(max_length=255)
+        enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
+
+
+    class Group_Permissions(models.Model):
+        group = models.ForeignKey(Group, on_delete=models.CASCADE)
+        permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+
+
+    class User_Groups(models.Model):
+        user = models.ForeignKey(User, on_delete=models.CASCADE)
+        group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+
+E em settings.py:
+
+    # Custom User Model
+    AUTH_USER_MODEL = 'accounts.User'  # Define o modelo de usuário personalizado
+
+
+Agora realize as migrações:
+
+    PS: Se der erro, remova todas as tabelas criadas anteriormente e recrie novamente
+
+Após isso, crie um outro app chamado de companies, pois ele vai ser muito
+importante para configurar nossos usuários e suas permissões.
+
+PS: Não esqueça de o adicionar em settings.py
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        # Rest Framework
+        'rest_framework',
+        'rest_framework_simplejwt.token_blacklist',  # opcional: para “logout”/revogação
+        # CORS
+        "corsheaders",
+        # Minhas apps
+        'accounts',
+        'companies',
+    ]
+
+E no models de companies, vamos configurar:
+
+    from django.db import models
+
+
+    class Enterprise(models.Model):
+        name = models.CharField(max_length=255)
+        user = models.ForeignKey("accounts.User", on_delete=models.CASCADE)
+
+        def __str__(self) -> str:
+            return self.name

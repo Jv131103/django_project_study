@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # opcional: para “logout”/revogação
     # CORS
     "corsheaders",
+    # Minhas apps
+    'accounts',
+    'companies',
 ]
 
 MIDDLEWARE = [
@@ -125,6 +128,10 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.User'  # Define o modelo de usuário personalizado
 
 
 # Static files (CSS, JavaScript, Images)
