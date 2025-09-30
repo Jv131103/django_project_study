@@ -1,0 +1,542 @@
+O que são Views em Programação?
+
+    . View = camada de apresentação em um sistema.
+
+    . Ela recebe dados (do model, de uma API, de cálculos) e mostra ao usuário em algum formato.
+
+    . Pode ser uma tela, página HTML, resposta JSON, XML ou até um terminal.
+
+Em termos de MVC (Model-View-Controller):
+
+    Model = dados.
+
+    View = como mostrar os dados.
+
+    Controller = lógica de controle, decide qual view usar.
+
+No Django (MVT):
+
+    Model = dados.
+
+    View = lógica do que vai ser mostrado.
+
+    Template = interface final exibida ao usuário.
+
+                    Exemplo de View em Programação
+
+Exemplo genérico (não Django):
+
+    # model
+    class Produto:
+        def __init__(self, nome, preco):
+            self.nome = nome
+            self.preco = preco
+
+    # view
+    def mostrar_produto(produto):
+        return f"Produto: {produto.nome} - R$ {produto.preco:.2f}"
+
+    # controller
+    p = Produto("Camiseta", 59.90)
+    print(mostrar_produto(p))
+
+Saída:
+
+    Produto: Camiseta - R$ 59.90
+
+A view transforma dados em algo legível/apresentável.
+
+                            Views no Django
+
+No Django, uma view é uma função ou classe Python que:
+
+    Recebe um objeto HttpRequest.
+
+    Retorna um objeto HttpResponse (HTML, JSON, XML, etc).
+
+PS: Toda URL do Django aponta para uma view.
+
+Views baseadas em Função (FBV):
+
+    Forma mais simples: cada rota chama uma função.
+
+        # views.py
+        from django.http import HttpResponse
+
+        def home(request):
+            return HttpResponse("Bem-vindo ao meu site!")
+
+        def sobre(request):
+            return HttpResponse("Página Sobre")
+
+    Configuração em urls.py:
+
+        from django.urls import path
+        from . import views
+
+        urlpatterns = [
+            path("", views.home, name="home"),
+            path("sobre/", views.sobre, name="sobre"),
+        ]
+
+    Pós:
+
+        Boa para projetos pequenos.
+    
+    Contras:
+        
+        Pode ficar bagunçado em sistemas grandes.
+
+Views baseadas em Classe (CBV):
+
+    Mais organizadas → cada view é uma classe que herda de View.
+
+        from django.http import HttpResponse
+        from django.views import View
+
+        class HomeView(View):
+            def get(self, request):
+                return HttpResponse("Bem-vindo ao meu site (CBV)!")
+
+    urls.py:
+
+        from django.urls import path
+        from .views import HomeView
+
+        urlpatterns = [
+            path("", HomeView.as_view(), name="home"),
+        ]
+
+    Boa para código reutilizável e métodos separados por verbo HTTP (get, post, etc).
+
+Views Genéricas:
+
+    O Django traz CBVs prontas para CRUD e listagem.
+
+    Exemplos:
+
+        ListView → lista objetos.
+
+        DetailView → mostra um objeto.
+
+        CreateView → cria novo objeto.
+
+        UpdateView → atualiza objeto.
+
+        DeleteView → deleta objeto.
+
+            from django.views.generic import ListView, DetailView
+            from .models import Produto
+
+            class ProdutoListView(ListView):
+                model = Produto
+                template_name = "produtos/lista.html"
+
+            class ProdutoDetailView(DetailView):
+                model = Produto
+                template_name = "produtos/detalhe.html"
+
+    Com poucas linhas você ganha CRUD completo.
+
+Views no Django Rest Framework (DRF):
+
+    No DRF, views servem para expor APIs.
+
+    Tipos:
+
+        APIView → parecida com CBV.
+
+            from rest_framework.views import APIView
+            from rest_framework.response import Response
+
+            class HelloView(APIView):
+                def get(self, request):
+                    return Response({"mensagem": "Olá, mundo!"})
+
+
+        GenericAPIView → já traz recursos extras (pagination, filtering).
+
+        ViewSets → mais poderosas, geram CRUD automático.
+
+            from rest_framework import viewsets
+            from .models import Produto
+            from .serializers import ProdutoSerializer
+
+            class ProdutoViewSet(viewsets.ModelViewSet):
+                queryset = Produto.objects.all()
+                serializer_class = ProdutoSerializer
+
+        PS: O ModelViewSet já traz:
+
+            list → GET /produtos/
+
+            retrieve → GET /produtos/1/
+
+            create → POST /produtos/
+
+            update → PUT /produtos/1/
+
+            delete → DELETE /produtos/1/
+
+Tipos de Resposta em Views:
+
+    Views podem retornar:
+
+        HTML → render(request, "template.html", contexto).
+
+        JSON → JsonResponse({"chave": "valor"}).
+
+        Arquivos → PDF, CSV, imagens.
+
+        Redirect → HttpResponseRedirect("/url/").
+
+Middleware vs View:
+
+    Middleware → intercepta requisições antes/depois das views.
+
+    View → lógica central que decide a resposta.
+
+
+Boas práticas em Views:
+
+    ✅ Mantenha simples (views finas, lógica nos models/services).
+    ✅ Prefira CBVs ou genéricas em projetos médios/grandes.
+    ✅ Em APIs → use ViewSets.
+    ✅ Use mixins para reaproveitar código.
+    ✅ Separe lógica complexa em services.py (não entupir views).
+
+
+                            Em nosso projeto
+
+Vamos criar o arquivo urls.py em accounts.
+
+    # accounts/urls.py
+    from django.urls import path
+
+    from .views.signin import Signin
+    from .views.signup import Signup
+    from .views.user import GetUser
+
+    app_name = "accounts"
+
+    urlpatterns = [
+        path("signin", Signin.as_view(), name="signin"),
+        path("signup", Signup.as_view(), name="signup"),
+        path("user", GetUser.as_view(), name="user"),
+    ]
+
+
+Após isso remova o arquivo views.py de accounts e crie uma pasta chama views e depois
+crie um arquivo chamado base.py, e dentro dele vamos realizar:
+
+
+    from rest_framework.exceptions import APIException
+    from rest_framework.views import APIView
+
+    from accounts.models import Group_Permissions, User_Groups
+    from companies.models import Employee, Enterprise
+
+
+    class Base(APIView):
+        def get_enterprise_user(self, user_id):
+            enterprise = {
+                "is_owner": False,
+                "permissions": [],
+            }
+
+            enterprise["is_owner"] = Enterprise.objects.filter(user_id=user_id)\
+                .exists()
+
+            if enterprise["is_owner"]:
+                return enterprise
+
+            # permissions, Get Employee
+            employee = Employee.objects.filter(user_id=user_id).first()
+
+            if not employee:
+                raise APIException("Este não é um funcionário")
+
+            groups = User_Groups.objects.filter(user_id=user_id).all()
+
+            for g in groups:
+                group = g.group
+
+                permissions = Group_Permissions.objects.filter(group_id=group.id)\
+                    .all()
+
+                for p in permissions:
+                    enterprise["permissions"].append(
+                        {
+                            "id": p.permission.id,
+                            "label": p.permission.name,
+                            "codename": p.permission.codename
+                        },
+                    )
+
+            return enterprise
+
+Agora, ainda em accounts/views, vamos criar outro arquivo, chamado de signin.py e nele,
+vamos realizar os seguintes ajustes:
+
+    from rest_framework.response import Response
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    from accounts.auth import Autentication
+    from accounts.serializers import UserSerializer
+    from accounts.views.base import Base
+
+
+    class Signin(Base):
+        def post(self, request):
+            email = request.data.get("email")
+            password = request.data.get("password")
+
+            user = Autentication.signin(self, email=email, password=password)
+
+            token = RefreshToken.for_user(user)
+
+            enterprise = self.get_enterprise_user(user.id)
+
+            serializer = UserSerializer(user)
+
+            return Response(
+                {
+                    "user": serializer.data,
+                    "enterprise": enterprise,
+                    "refresh": str(token),
+                    "access": str(token.access_token)
+                }
+            )
+
+Agora, crie o arquivo chamado signup.py em views de accounts:
+
+    from rest_framework.response import Response
+
+    from accounts.auth import Autentication
+    from accounts.serializers import UserSerializer
+    from accounts.views.base import Base
+
+
+    class Signup(Base):
+        def post(self, request):
+            name = request.data.get("name")
+            email = request.data.get("email")
+            password = request.data.get("password")
+
+            user = Autentication.signup(self,
+                                        name=name,
+                                        email=email,
+                                        password=password)
+
+            serializer = UserSerializer(user)
+
+            return Response(
+                {
+                    "user": serializer.data
+                }
+            )
+
+Agora, vamos criar o arquivo user.py em views de accounts:
+
+    from rest_framework.permissions import IsAuthenticated
+    from rest_framework.response import Response
+
+    from accounts.models import User
+    from accounts.serializers import UserSerializer
+    from accounts.views.base import Base
+
+
+    class GetUser(Base):
+        permission_classes = [IsAuthenticated]
+
+        def get(self, request):
+            user = User.objects.filter(id=request.user.id).first()
+
+            enterprise = self.get_enterprise_user(user)
+
+            serializer = UserSerializer(user)
+
+            return Response(
+                {
+                    "user": serializer.data,
+                    "enterprise": enterprise
+                }
+            )
+
+
+Em urls.py de core, vamos incluir:
+
+    from django.contrib import admin
+    from django.urls import include, path
+
+    urlpatterns = [
+        path('admin/', admin.site.urls),
+        path('api/auth/', include('accounts.urls'))
+    ]
+
+Em models.py de companies, vamos criar uma nova classe que será responsável se alguém é ou não
+um funcionario.
+
+    class Employee(models.Model):
+        enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
+        user = models.ForeignKey("accounts.User", on_delete=models.CASCADE)
+
+        def __str__(self) -> str:
+            return f"{self.user.name} - {self.enterprise.name}"
+
+
+inicie o seu Django
+
+Agora no postman ou outra ferramenta de testes de API, vamos testar primeiro:
+
+    URL: http://127.0.0.1:8000/api/auth/signin
+    METHOD: POST
+
+    SAÍDA:
+
+    {
+        "detail": "Usuário de email None não encontrado Verifique o email/senha e tente novamente."
+    }
+
+
+Ajustando bug em auth.py:
+
+    from django.contrib.auth.hashers import check_password, make_password
+    from rest_framework.exceptions import \
+        ValidationError  # melhor que APIException para input inválido
+    from rest_framework.exceptions import AuthenticationFailed
+
+    from accounts.models import User
+    from companies.models import Employee, Enterprise
+
+
+    class Autentication:
+        def signin(self, email=None, password=None) -> User | None:
+            exc = AuthenticationFailed(
+                f"Usuário de email {email} não encontrado. "
+                "Verifique email/senha e tente novamente."
+            )
+            user = User.objects.filter(email=email).first()
+            if not user:
+                raise exc
+            if not check_password(password, user.password):
+                raise exc
+            return user
+
+        def signup(
+            self,
+            name=None,
+            email=None,
+            password=None,
+            type_account="owner",  # defina um padrão explícito
+            company_id=None
+        ) -> User:
+            if not name:
+                raise ValidationError({"name": "O nome é obrigatório."})
+            if not email:
+                raise ValidationError({"email": "O email é obrigatório."})
+            if not password:
+                raise ValidationError({"password": "A senha é obrigatória."})
+            if type_account == "employ" and not company_id:
+                raise ValidationError({"company_id": "Obrigatório para funcionário."})
+
+            # ✅ lógica correta
+            if User.objects.filter(email=email).exists():
+                raise ValidationError({"email": f"Já existe um usuário com {email}."})
+
+            password_hash = make_password(password)
+
+            user = User.objects.create(
+                name=name,
+                email=email,
+                password=password_hash,
+                is_owner=(type_account == "owner"),
+            )
+
+            if type_account == "owner":
+                created_enterprise = Enterprise.objects.create(
+                    name="Nome da empresa",
+                    user_id=user.id,
+                )
+
+            if type_account == "employ":
+                # se vier company_id usa, senão usa da criada acima
+                Employee.objects.create(
+                    user_id=user.id,
+                    enterprise_id=company_id or created_enterprise.id,
+                )
+
+            return user
+
+
+Isso por que não temos usuários registrados, porém, agora, podemos criar um:
+
+    URL: http://127.0.0.1:8000/api/auth/signup
+    METHOD: POST
+
+    1° saída:
+
+        {
+            "detail": "O nome é obrigatório, não pode ser vazio."
+        }
+
+    2° saída:
+
+        params:
+
+            name        irineu
+            email       vcnemeu124@gmail.com
+            password    123
+
+
+        {
+            "user": {
+                "id": 2,   // Nesse caso, é por que já tinha criado um de teste antes
+                "name": "Irineu",
+                "email": "vcnemeu124@gmail.com"
+            }
+        }
+
+Vamos fazer o login novamente:
+
+    URL: http://127.0.0.1:8000/api/auth/signin
+    METHOD: POST
+
+    SAÍDA:
+
+        {
+            "user": {
+                "id": 2,
+                "name": "Irineu",
+                "email": "vcnemeu124@gmail.com"
+            },
+            "enterprise": {
+                "is_owner": true,
+                "permissions": []
+            },
+            "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1OTMyNTMzMSwiaWF0IjoxNzU5MjM4OTMxLCJqdGkiOiI0NjViOTY0N2FhODc0NWM3OWNhZjUyNWRhODRmN2VjZSIsInVzZXJfaWQiOiIyIn0.tFe3GU3hgW7raDW6IMKtJMG-NfTXBGvSmILZFA7AyN8",
+            "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MjM5MjMxLCJpYXQiOjE3NTkyMzg5MzEsImp0aSI6ImUxZDY5ZmMwNDJhNDQ2YjM5ZWQ3ZjgzNDI4NTYwNDdkIiwidXNlcl9pZCI6IjIifQ.eT6KlMAjyX5B7ofYCRJNs4SdkvBkouWmBtE10tsldNE"
+        }
+
+Vamos ver o que acontece aqui:
+
+    URL: http://127.0.0.1:8000/api/auth/user
+    METHOD: GET
+
+    Ele vai dar um erro de autenticação, com isso, faça o signin, copie o token access e sete
+    em authorization e após isso, refaça de novo a consulta.
+
+
+    Saída EXEMPLO esperado:
+
+        {
+            "user": {
+                "id": 2,
+                "name": "Irineu",
+                "email": "vcnemeu124@gmail.com"
+            },
+            "enterprise": {
+                "is_owner": true,
+                "permissions": []
+            }
+        }

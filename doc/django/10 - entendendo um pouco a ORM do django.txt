@@ -1,0 +1,342 @@
+                    O que é ORM (Object–Relational Mapping)
+
+Definição: técnica que mapeia classes/objetos ↔ tabelas/linhas de um banco relacional.
+
+Objetivo: escrever código na linguagem (Python) em vez de SQL direto para CRUD, consultas e 
+relações.
+
+Vantagens:
+
+    . Produtividade e legibilidade.
+
+    . Portabilidade entre bancos (PostgreSQL, MySQL, SQLite…).
+
+    . Segurança (placeholders contra SQL injection).
+
+    . Camada de validação/tipos.
+
+Limites:
+
+    . Consultas MUITO específicas/otimizadas podem exigir SQL manual.
+
+    . Entender o SQL gerado é essencial (para performance).
+
+Conceitos-chave (independentes do framework):
+
+    . Entidade/Model: classe que representa uma tabela.
+
+    . Campo/Field: atributo que vira coluna.
+
+    . Relacionamentos: 1–N (FK), N–N (tabela intermediária), 1–1.
+
+    . Consulta: API de alto nível que gera SQL (filtro, projeção, join, agregação).
+
+    . Transações: garantir atomicidade/consistência.
+
+    . Migrações: versionamento do esquema do banco.
+
+                    ORM do Django — Visão Geral
+
+. Model = classe Python que herda de models.Model.
+
+. ORM mapeia Model ↔ tabela e fornece a API QuerySet para consultar.
+
+. QuerySets são “preguiçosos” (lazy): só viram SQL quando avaliados.
+
+Estrutura básica de um Model:
+
+    from django.db import models
+
+    class Product(models.Model):
+        name  = models.CharField(max_length=150, db_index=True)
+        price = models.DecimalField(max_digits=9, decimal_places=2)
+        stock = models.PositiveIntegerField(default=0)
+        active = models.BooleanField(default=True)
+
+        class Meta:
+            ordering = ["name"]               # ORDER BY
+            indexes = [models.Index(fields=["active", "price"])]
+            constraints = [
+                models.CheckConstraint(check=models.Q(price__gte=0), name="price_non_negative"),
+                models.UniqueConstraint(fields=["name"], name="unique_product_name"),
+            ]
+
+        def __str__(self):
+            return self.name
+
+    Definições:
+
+        Meta: configurações da tabela (nome, ordenação, índices, constraints…).
+    
+        Fields: mapeiam tipos + validações.
+        
+        __str__: representação legível no admin/shell.
+
+                QuerySets: como pensar (e quando avaliam)
+
+Criar objetos:
+
+    p = Product.objects.create(name="Camiseta", price=59.90, stock=10)
+    # ou:
+    p = Product(name="Camiseta", price=59.90); p.save()
+
+Filtrar / Buscar:
+
+    qs = Product.objects.filter(active=True, price__lte=100)  # ainda não executou
+    exists = qs.exists()      # executa SELECT EXISTS …
+    total  = qs.count()       # executa SELECT COUNT(*)
+    lista  = list(qs)         # executa e materializa
+
+Avaliam o QuerySet (rodam SQL) quando você:
+
+    itera (for x in qs)
+
+    chama len(qs), list(qs), bool(qs)
+
+    chama first(), last(), exists(), count(), aggregate(), get(), etc.
+
+Cache interno: depois da primeira avaliação, o qs guarda resultados. Operações subsequentes 
+no mesmo qs podem reutilizar o cache (mas novos qs não compartilham esse cache).
+
+                Filtragem, Lookups, Ordenação, Paginação
+
+Lookups (double underscore):
+
+    Product.objects.filter(name__icontains="camisa")   # LIKE %camisa%
+    Product.objects.filter(price__range=(50, 100))
+    Product.objects.filter(created_at__date=date(2025, 9, 30))
+    Product.objects.exclude(active=True)
+
+Ordenação:
+
+    Product.objects.order_by("-price", "name")
+
+
+Paginação / slicing (gera LIMIT/OFFSET):
+
+    page = Product.objects.filter(active=True).order_by("id")[20:40]
+
+
+Erros comuns:
+
+    get() lança DoesNotExist/MultipleObjectsReturned.
+
+    Prefira first()/last() para evitar exceção:
+
+        item = Product.objects.filter(name="X").first()  # None se não achar
+
+                    Joins: relacionamentos e travessias
+
+Suponha:
+
+    class Category(models.Model):
+        name = models.CharField(max_length=100)
+
+    class Product(models.Model):
+        category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
+        name = models.CharField(max_length=150)
+
+Traversing (JOIN implícito):
+
+    # todos os produtos da categoria “Roupas”
+    Product.objects.filter(category__name="Roupas")
+
+    # todas as categorias que têm algum produto ativo
+    Category.objects.filter(products__active=True).distinct()
+
+M2M:
+
+    class Tag(models.Model):
+        name = models.CharField(max_length=30, unique=True)
+
+    class Product(models.Model):
+        tags = models.ManyToManyField(Tag, related_name="products")
+
+    Product.objects.filter(tags__name="promo")
+
+1-1:
+
+    class Profile(models.Model):
+        user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+                    Agregações, Anotações e Funções do BD
+
+Aggregate (retorna dicionário):
+
+    from django.db.models import Avg, Sum, Max, Min, Count
+    Product.objects.aggregate(total=Count("id"), media=Avg("price"))
+
+Annotate (adiciona colunas calculadas no QuerySet)
+
+    from django.db.models import Count
+    Category.objects.annotate(n_products=Count("products")).order_by("-n_products")
+
+Funções & expressões
+
+    . F (referenciar coluna)
+    . Q (OR/AND dinâmico)
+    . Case/When (condicional)
+    . Subquery
+    . OuterRef
+    . Window.
+
+        from django.db.models import F, Q, Case, When, IntegerField, Value
+        # aumentar preço em 10% em massa (sem carregar objetos)
+        Product.objects.filter(active=True).update(price=F("price") * 1.10)
+
+        # OR com Q
+        Product.objects.filter(Q(name__icontains="cam") | Q(name__icontains="shirt"))
+
+        # CASE
+        Product.objects.annotate(
+            score=Case(
+                When(price__lte=50, then=Value(1)),
+                When(price__lte=100, then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            )
+        )
+
+        # Subquery (ex.: último pedido de cada cliente)
+        from django.db.models import Subquery, OuterRef, DateTimeField, Max
+
+Funções de banco (ex.: Lower, Coalesce, TruncDate, StringAgg…):
+
+    from django.db.models.functions import Lower, Coalesce, TruncDate
+    Product.objects.annotate(name_lower=Lower("name"))
+
+                Performance: N+1, select_related, prefetch_related
+
+N+1: quando você faz um loop e cada iteração dispara uma nova query.
+
+Solucões:
+
+    select_related() → FK/OneToOne (JOIN no SQL, carrega junto).
+
+    prefetch_related() → M2M/Reverse-FK (faz queries separadas e “costura” em memória).
+
+    # FK
+    qs = Product.objects.select_related("category").all()
+    for p in qs: 
+        print(p.category.name)  # sem N+1
+
+    # M2M
+    qs = Product.objects.prefetch_related("tags").all()
+
+Outras dicas:
+
+    . Use only()/defer() para reduzir colunas:
+
+        Product.objects.only("id", "name")
+
+    . Use values()/values_list() quando só quer dicionários/tuplas.
+
+    . Para existência, use .exists() (não carregue tudo).
+
+    . Para contagem, use .count() (evite len(qs) quando não avaliado).
+
+    . Para milhares de linhas, use .iterator() (streaming) para reduzir memória.
+
+    . Veja SQL com print(str(qs.query)) ou qs.explain().
+
+                    Escrita em massa e efeitos colaterais
+
+Bulk:
+
+        Product.objects.bulk_create([
+            Product(name="A", price=10),
+            Product(name="B", price=20),
+        ], ignore_conflicts=True)
+
+        Product.objects.filter(active=False).update(active=True)
+
+    bulk_create/update não chamam save() nem disparam signals (post_save), e não validam 
+    full_clean().
+
+Delete:
+
+    Product.objects.filter(active=False).delete()  # delete em massa
+    # cuidado: cascata via FK com on_delete
+
+                        Transações e concorrência
+
+    from django.db import transaction
+
+    with transaction.atomic():
+        # tudo aqui dentro é atômico
+        p = Product.objects.select_for_update().get(id=1)  # bloqueia linha
+        p.stock -= 1
+        p.save()
+        # se qualquer exceção ocorrer, rollback automático
+
+    # callbacks
+    transaction.on_commit(lambda: enviar_email(p.id))
+
+
+select_for_update(): lock de linha durante a transação (PostgreSQL/MySQL).
+
+            Múltiplos bancos, roteamento e .using()
+
+    # settings.DATABASES com 'default' e 'replica'
+    Product.objects.using("replica").filter(active=True)
+
+Implemente Database Routers para ler em réplica e escrever no primário.
+
+                    Migrations (ciclo de vida do esquema)
+
+. Criar/alterar models → python manage.py makemigrations
+
+. Aplicar → python manage.py migrate
+
+. Renomear campo/tabela: o Django gera migrações inteligentes.
+
+. Data migrations: operações RunPython.
+
+. Conflitos de migração: resolva via --merge.
+
+. Dica: defina AUTH_USER_MODEL antes de migrar apps que referenciam o usuário.
+
+                    Managers e QuerySets customizados
+
+class ProductQuerySet(models.QuerySet):
+    def available(self):
+        return self.filter(active=True, stock__gt=0)
+
+class ProductManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("category")
+    def available(self):
+        return self.get_queryset().filter(active=True, stock__gt=0)
+
+class Product(models.Model):
+    ...
+    objects = ProductManager.from_queryset(ProductQuerySet)()
+
+
+Uso:
+
+    Product.objects.available().order_by("-price")
+
+                    SQL bruto quando necessário
+
+from django.db import connection
+
+with connection.cursor() as cur:
+    cur.execute("SELECT id, name FROM app_product WHERE price > %s", [100])
+    rows = cur.fetchall()
+
+OU:
+
+for p in Product.objects.raw("SELECT * FROM app_product WHERE price > %s", [100]):
+    print(p.name)
+
+
+Sempre use parâmetros (%s) para evitar SQL injection.
+
+                                Debug e inspeção
+
+qs.explain(): plano de execução (Postgres/MySQL).
+
+connection.queries (em DEBUG) para ver SQLs.
+
+Django Debug Toolbar (em dev) mostra queries, tempos e N+1.

@@ -1,0 +1,5 @@
+Responsável por organizar o login e o nosso registro
+
+Em accounts, crie o arquivo chamado auth.py e nela vamos criar:
+
+
