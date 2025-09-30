@@ -1,0 +1,367 @@
+                    Autenticação × Autorização — diferença e contexto:
+
+Autenticação (Authentication):
+
+    Pergunta que responde: “Quem é você?”
+
+    Objetivo: provar a identidade do usuário/cliente/serviço.
+
+    Como é feita: senha, token, cookie de sessão, 2FA, certificado, 
+    OAuth2/OIDC (Google, GitHub), chaves de API.
+
+    Resultado técnico: o servidor reconhece o principal e preenche request.user 
+    (ou credencial equivalente).
+
+Autorização (Authorization):
+
+    Pergunta que responde: “O que você pode fazer?”
+
+    Objetivo: decidir se o usuário autenticado tem permissão para acessar um recurso/ação.
+
+    Como é feita: regras de acesso (RBAC/ABAC/PBAC), checagem de permissões e escopos, 
+    policy engines.
+
+    Resultado técnico: permitir/negar (200/403); quando falta autenticar, é 401.
+
+Sequência correta numa request típica de API:
+
+    1. Autenticação: um authentication backend valida credenciais e define request.user 
+    (e request.auth).
+
+    2. Autorização: permission checks avaliam usuário, recurso, escopo/tenant e ação.
+
+    3. Negócio: a view executa a lógica se autorizado.
+
+    Dica mental: AuthN (com N de “Name”: identidade) antes de AuthZ (com Z de “permissaoZ”).
+
+Erros comuns (e sinais)
+
+    401 Unauthorized → faltou/autenticou mal (token inválido, sessão ausente).
+
+    403 Forbidden → autenticou, mas não tem direito.
+
+    500 → erro de código (ex.: lançar exceção genérica no lugar de 403/400).
+
+            Permissions (permissões) — visão geral de programação
+
+Modelos de autorização:
+
+    RBAC (Role-Based Access Control): usuários recebem papéis (roles/grupos); 
+    papéis possuem permissões. Simples, ótimo para 80% dos casos.
+
+    ABAC (Attribute-Based): decide com base em atributos (do usuário, do recurso, do 
+    contexto: horário, IP, plano). Poderoso e flexível.
+
+    PBAC/Rule-based/Policy-based: regras/políticas declarativas (ex.: “owner pode tudo na sua 
+    empresa”).
+
+    Recurso vs. Ação: sempre pense em recurso (ex.: enterprise:42) + ação (read/update/delete).
+
+    Escopo/tenant: em apps multiempresa, toda permissão precisa considerar a qual empresa se 
+    refere.
+
+Boas práticas gerais:
+
+    Princípio do menor privilégio (comece negando, libere o mínimo).
+
+    Separação de papéis (admin ≠ financeiro ≠ vendedor).
+
+    Autorização no servidor (não confiar no front).
+
+    Auditoria (logar quem fez o quê/onde/quando).
+
+    Teste de autorização (unit/integração, inclusive negativos).
+
+    Centralizar regras (services/policies) para evitar duplicação e inconsistência.
+
+                            Permissões no Django (núcleo):
+
+Pré-requisito do seu projeto: para usar o sistema nativo de permissões do Django, seu 
+User deve incorporar PermissionsMixin (ou oferecer campos equivalentes e compatibilidade). 
+Isso habilita user.groups, user.user_permissions, user.has_perm() etc.
+
+Permissões nativas de model:
+
+    O Django cria 3 permissões por model: add, change, delete (e view nas versões atuais).
+
+        Ex.: para app.Product:
+
+            app.add_product, app.change_product, app.delete_product, app.view_product.
+
+Checando permissões:
+
+    # em qualquer view/código
+    if request.user.has_perm("app.change_product"):
+        ...
+    if request.user.has_perms(["app.view_product", "app.change_product"]):
+        ...
+    if request.user.has_module_perms("app"):
+        ...  # tem permissão em algum model do app
+
+Decoradores e mixins úteis:
+
+    from django.contrib.auth.decorators import login_required, permission_required
+    from django.utils.decorators import method_decorator
+
+    @login_required
+    @permission_required("app.add_product", raise_exception=True)
+    def create_product(request): ...
+
+    # Em CBV
+    @method_decorator(login_required, name="dispatch")
+    @method_decorator(permission_required("app.view_product", raise_exception=True), name="dispatch")
+    class ProductView(View): ...
+
+Permissões personalizadas de model:
+
+    Adicione no Meta.permissions:
+
+        class Product(models.Model):
+            ...
+            class Meta:
+                permissions = [
+                    ("publish_product", "Pode publicar produto"),
+                ]
+
+    Checagem:
+
+        request.user.has_perm("app.publish_product")
+
+Grupos:
+
+    Use django.contrib.auth.models.Group para representar roles (ex.: owner, manager, seller).
+
+    Atribua permissões ao grupo e adicione usuários ao grupo → pronto, RBAC simples.
+
+Autorização por objeto (object-level):
+
+    O Django “puro” não faz por padrão.
+
+    Opções:
+
+        django-guardian (grants user/object permissions).
+        
+        Implementar checagens por objeto manualmente nas views/queries (ex.: verificar 
+        obj.enterprise == user.enterprise antes de agir).
+
+                    Permissões no DRF (Django REST Framework)
+
+Pipeline DRF:
+
+    1. Autenticação (classes em DEFAULT_AUTHENTICATION_CLASSES) define request.user/request.auth.
+
+    2. Permissões (permission_classes) rodam antes da view.
+
+    3. Throttle (limites).
+
+Prontas do DRF:
+
+    . IsAuthenticated → exige login.
+
+    . IsAdminUser → is_staff=True.
+
+    . AllowAny → público.
+
+    . DjangoModelPermissions → mapeia método HTTP → perm nativa:
+
+        GET → view_model
+
+        POST → add_model
+
+        PUT/PATCH → change_model
+
+        DELETE → delete_model
+
+    . DjangoObjectPermissions → idem, mas por objeto (exige backend com object-perms, 
+    como guardian).
+
+Usando em Views/ViewSets:
+
+    from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
+
+    class ProductViewSet(ModelViewSet):
+        queryset = Product.objects.all()
+        serializer_class = ProductSerializer
+        permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+
+Permissões por ação (em ViewSet):
+
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
+    class IsOwnerOrReadOnly(BasePermission):
+        def has_object_permission(self, request, view, obj):
+            if request.method in SAFE_METHODS:
+                return True
+            return getattr(obj, "owner_id", None) == request.user.id
+
+    class ProductViewSet(ModelViewSet):
+        ...
+        def get_permissions(self):
+            if self.action in ["list", "retrieve"]:
+                return [IsAuthenticated()]
+            return [IsAuthenticated(), IsOwnerOrReadOnly()]
+
+Multi-tenant (o seu caso: Enterprise):
+
+    Duas camadas que se somam:
+
+        1. Escopo do queryset (ninguém deve sequer “ver” o que não pertence ao tenant):
+
+            class ProductViewSet(ModelViewSet):
+                serializer_class = ProductSerializer
+                permission_classes = [IsAuthenticated]
+
+                def get_queryset(self):
+                    enterprise_id = self.request.headers.get("X-Enterprise-ID")  # ou derive do token
+                    return Product.objects.filter(enterprise_id=enterprise_id)
+
+        2. Permissão por ação/objeto (quem pode o quê dentro do tenant):
+
+            class IsEnterpriseOwner(BasePermission):
+                def has_permission(self, request, view):
+                    # ex.: dono da empresa pode criar/editar
+                    ent_id = request.headers.get("X-Enterprise-ID")
+                    return Enterprise.objects.filter(id=ent_id, user_id=request.user.id).exists()
+
+                def has_object_permission(self, request, view, obj):
+                    # ex.: só dono ou funcionário com permissão específica
+                    ent_id = request.headers.get("X-Enterprise-ID")
+                    return obj.enterprise_id == int(ent_id)
+
+    Importante: autorização não é só permission_classes: o get_queryset() deve filtrar por 
+    tenant para eliminar data leaks.
+
+Retornos corretos no DRF:
+
+    Falha de autenticação → AuthenticationFailed → 401.
+
+    Falha de autorização → PermissionDenied → 403.
+
+    Dados inválidos → ValidationError → 400.
+
+                    Exemplos rápidos (Django + DRF)
+
+(A) Permissão custom por empresa (view de update):
+
+    from rest_framework.exceptions import PermissionDenied
+
+    def assert_can_manage_enterprise(user, enterprise_id):
+        is_owner = Enterprise.objects.filter(id=enterprise_id, user_id=user.id).exists()
+        if not is_owner:
+            raise PermissionDenied("Você não pode gerenciar esta empresa.")
+
+(B) Model com permissão extra + uso no DRF:
+
+    class Invoice(models.Model):
+        enterprise = models.ForeignKey(Enterprise, on_delete=models.CASCADE)
+        amount = models.DecimalField(max_digits=10, decimal_places=2)
+        class Meta:
+            permissions = [("approve_invoice", "Pode aprovar faturas")]
+
+    # checando:
+    if not request.user.has_perm("app.approve_invoice"):
+        raise PermissionDenied("Sem permissão para aprovar.")
+
+(C) Mapear métodos HTTP → perms (DjangoModelPermissions):
+
+    class InvoiceViewSet(ModelViewSet):
+        queryset = Invoice.objects.all()
+        serializer_class = InvoiceSerializer
+        permission_classes = [IsAuthenticated, DjangoModelPermissions]
+
+        def get_queryset(self):
+            ent = self.request.headers.get("X-Enterprise-ID")
+            return super().get_queryset().filter(enterprise_id=ent)
+
+    Atribua view_invoice, add_invoice, change_invoice, delete_invoice aos grupos certos 
+    (ou aos usuários).
+
+                            Em nosso projeto
+
+Em utils de companies, crie um arquivo chamado permissions.py e nele vamos iniciar:
+
+    from django.contrib.auth.models import Permission
+    from rest_framework import permissions
+
+    from accounts.models import Group_Permissions, User_Groups
+
+
+    def check_permission(user, method, permission_to):
+        if user.is_autenticated:
+            return False
+
+        if user.is_owner:
+            return True
+
+        required_permission = "view_" + permission_to
+
+        if method == 'POST':
+            required_permission = 'add_' + permission_to
+        elif method == "PUT":
+            required_permission = "change_" + permission_to
+        elif method == "DELETE":
+            required_permission = "delete_" + permission_to
+
+        groups = User_Groups.objects.\
+            values("group_id").filter(user_id=user.id).all()
+
+        for group in groups:
+            permissions = Group_Permissions.objects.\
+                values("permission_id").filter(group_id=group['group_id']).all()
+
+            for permission in permissions:
+                if (
+                    Permission.objects.filter(
+                        id=permission['permission_id'],
+                        codename=required_permission
+                    ).exists()
+                ):
+                    return True
+
+
+    class EmployeePermission(permissions.BasePermission):
+        message = "O funcionário não têm permissão de gerência"
+
+        def has_permission(self, request, view):
+            return check_permission(
+                request.user,
+                request.method,
+                permission_to='employee'
+            )
+
+
+    class GroupsPermissions(permissions.BasePermission):
+        message = "O funcionário não têm permissão de gerência de grupos"
+
+        def has_permission(self, request, view):
+            return check_permission(
+                request.user,
+                request.method,
+                permission_to='group'
+            )
+
+
+    class GroupsPermissionsPermission(permissions.BasePermission):
+        message = "O funcionário não têm permissão de gerência de permissões"
+
+        def has_permission(self, request, view):
+            return check_permission(
+                request.user,
+                request.method,
+                permission_to='permission'
+            )
+
+
+    class TaskPermission(permissions.BasePermission):
+        message = "O funcionário não autorizado para gerência de tarefas de outrem"
+
+        def has_permission(self, request, view):
+            return check_permission(
+                request.user,
+                request.method,
+                permission_to='task'
+            )
+
+Com, isso nós definimos cada permissão correspondente que um funcionário ou líder terão na
+base de dados para cada item importante do banco.
